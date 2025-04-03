@@ -298,10 +298,10 @@ const CreateTaskModal = ({ isOpen, onClose, columnId, editTask }: CreateTaskModa
                   <FormLabel>Assignee</FormLabel>
                   <Select
                     onValueChange={(value) => 
-                      field.onChange(value ? parseInt(value) : null)
+                      field.onChange(value !== "unassigned" ? parseInt(value) : null)
                     }
-                    defaultValue={field.value?.toString() || ''}
-                    value={field.value?.toString() || ''}
+                    defaultValue={field.value?.toString() || 'unassigned'}
+                    value={field.value?.toString() || 'unassigned'}
                   >
                     <FormControl>
                       <SelectTrigger>
@@ -309,7 +309,7 @@ const CreateTaskModal = ({ isOpen, onClose, columnId, editTask }: CreateTaskModa
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="">Unassigned</SelectItem>
+                      <SelectItem value="unassigned">Unassigned</SelectItem>
                       {users.map(user => (
                         <SelectItem key={user.id} value={user.id.toString()}>
                           {user.username}
