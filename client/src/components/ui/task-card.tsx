@@ -5,7 +5,8 @@ import { TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui
 import { Badge } from '@/components/ui/badge';
 import { useDrag } from 'react-dnd';
 import { useDispatch } from 'react-redux';
-import { updateTask, deleteTask } from '@/store/slices/boardSlice';
+import type { AppDispatch } from '@/store';
+import { updateTaskAction, deleteTaskAction } from '@/store/slices/boardSlice';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -48,7 +49,7 @@ interface TaskCardProps {
 
 const TaskCard = ({ task, assignee, onEdit, commentCount = 0 }: TaskCardProps) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   const { toast } = useToast();
   const categoryStyle = getCategoryStyle(task.category);
   const priorityColor = getPriorityColor(task.priority);
@@ -75,7 +76,7 @@ const TaskCard = ({ task, assignee, onEdit, commentCount = 0 }: TaskCardProps) =
       updatedAt: new Date()
     };
     
-    dispatch(updateTask(updatedTask));
+    dispatch(updateTaskAction(updatedTask));
     
     toast({
       title: task.isCompleted ? 'Task marked as incomplete' : 'Task marked as complete',
@@ -84,7 +85,7 @@ const TaskCard = ({ task, assignee, onEdit, commentCount = 0 }: TaskCardProps) =
   };
 
   const handleDelete = () => {
-    dispatch(deleteTask({
+    dispatch(deleteTaskAction({
       columnId: task.columnId,
       taskId: task.id
     }));

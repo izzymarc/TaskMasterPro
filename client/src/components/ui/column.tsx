@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useDispatch } from 'react-redux';
+import type { AppDispatch } from '@/store';
 import { useDrop } from 'react-dnd';
 import { Button } from '@/components/ui/button';
 import { Plus, MoreVertical } from 'lucide-react';
@@ -17,7 +18,7 @@ import {
   DialogTrigger, 
   DialogClose 
 } from '@/components/ui/dialog';
-import { createTask, deleteColumn, moveTask } from '@/store/slices/boardSlice';
+import { createTask, deleteColumnAction, moveTaskAction } from '@/store/slices/boardSlice';
 import TaskCard from './task-card';
 import type { Column, Task, User } from '@shared/schema';
 import { useToast } from '@/hooks/use-toast';
@@ -32,7 +33,7 @@ interface ColumnProps {
 
 const TaskColumn = ({ column, tasks, users, onCreateTask, onEditColumn }: ColumnProps) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   const { toast } = useToast();
 
   const findAssignee = (assigneeId?: number | null) => {
@@ -46,7 +47,7 @@ const TaskColumn = ({ column, tasks, users, onCreateTask, onEditColumn }: Column
       if (item.columnId !== column.id) {
         // Calculate new order - add to the end of the column
         const newOrder = tasks.length;
-        dispatch(moveTask({ 
+        dispatch(moveTaskAction({ 
           id: item.id, 
           columnId: column.id, 
           order: newOrder 
@@ -64,7 +65,7 @@ const TaskColumn = ({ column, tasks, users, onCreateTask, onEditColumn }: Column
   }));
 
   const handleDeleteColumn = () => {
-    dispatch(deleteColumn(column.id));
+    dispatch(deleteColumnAction(column.id));
     setIsDialogOpen(false);
     
     toast({

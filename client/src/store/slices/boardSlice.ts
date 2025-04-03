@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import type { Board, Column, Task } from '@shared/schema';
+import type { RootState, AppDispatch, AppThunk } from '@/store';
 
 interface BoardState {
   currentBoard: Board | null;
@@ -140,7 +141,7 @@ export const {
   setColumns, 
   setTasks,
   addColumn,
-  updateColumn,
+  updateColumn, // Keep this for direct reducer calls
   removeColumn,
   addTask,
   updateTask,
@@ -155,38 +156,101 @@ export const {
 export const deleteTask = removeTask;
 export const deleteColumn = removeColumn;
 
-// Async actions for board operations
-export const createTask = (taskData: any) => (dispatch: any) => {
-  // In a real application, you would make an API call here
-  const newTask = {
-    ...taskData,
-    id: Date.now(), // Generate a temporary ID
-    createdAt: new Date(),
-  };
+// Async actions for board operations with Firebase integration
+import { 
+  db, 
+  createDocument, 
+  getDocuments, 
+  getDocument, 
+  updateDocument, 
+  deleteDocument, 
+  subscribeToCollection 
+} from '@/lib/firebase';
+import { collection, query, where, orderBy } from 'firebase/firestore';
+
+// Helper to convert Firestore date objects
+const convertFirebaseTimestamps = (obj: any) => {
+  if (!obj) return obj;
+  const newObj = { ...obj };
   
-  dispatch(addTask({ 
-    columnId: newTask.columnId, 
-    task: newTask 
-  }));
+  // Convert timestamp fields to Date objects
+  if (newObj.createdAt && typeof newObj.createdAt.toDate === 'function') {
+    newObj.createdAt = newObj.createdAt.toDate();
+  }
+  if (newObj.updatedAt && typeof newObj.updatedAt.toDate === 'function') {
+    newObj.updatedAt = newObj.updatedAt.toDate();
+  }
+  if (newObj.dueDate && typeof newObj.dueDate.toDate === 'function') {
+    newObj.dueDate = newObj.dueDate.toDate();
+  }
   
-  return newTask;
+  return newObj;
+};
+
+export const createTask = (taskData: any): AppThunk<Promise<Task>> => async (dispatch) => {
+  try {
+    dispatch(setLoading(true));
+    
+    const newTask = {
+      ...taskData,
+      id: Date.now(), // Generate an ID
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    
+    // Create the task in Firebase
+    await createDocument('tasks', newTask.id.toString(), newTask);
+    
+    // Update local state
+    dispatch(addTask({ 
+      columnId: newTask.columnId, 
+      task: newTask 
+    }));
+    
+    dispatch(setLoading(false));
+    return newTask;
+  } catch (error) {
+    dispatch(setError((error as Error).message));
+    dispatch(setLoading(false));
+    throw error;
+  }
 };
 
 export const fetchColumns = (boardId: number) => async (dispatch: any) => {
   try {
     dispatch(setLoading(true));
     
-    // Mock data for now
-    const mockColumns = [
-      { id: 1, boardId, name: 'To Do', order: 0, createdAt: new Date() },
-      { id: 2, boardId, name: 'In Progress', order: 1, createdAt: new Date() },
-      { id: 3, boardId, name: 'Done', order: 2, createdAt: new Date() }
-    ];
+    // Query columns for this board from Firebase
+    const columns = await getDocuments('columns');
     
-    // In a real app, you would fetch columns from API
-    dispatch(setColumns(mockColumns));
+    // Filter columns by boardId and convert any Firebase timestamps
+    const boardColumns = columns
+      .filter((col: any) => col.boardId === boardId)
+      .map(convertFirebaseTimestamps)
+      .sort((a: any, b: any) => a.order - b.order);
+    
+    // In case no columns exist yet, create default columns
+    if (boardColumns.length === 0) {
+      const defaultColumns = [
+        { id: Date.now(), boardId, name: 'To Do', order: 0, createdAt: new Date() },
+        { id: Date.now() + 1, boardId, name: 'In Progress', order: 1, createdAt: new Date() },
+        { id: Date.now() + 2, boardId, name: 'Done', order: 2, createdAt: new Date() }
+      ];
+      
+      // Save default columns to Firebase
+      await Promise.all(
+        defaultColumns.map(col => 
+          createDocument('columns', col.id.toString(), col)
+        )
+      );
+      
+      dispatch(setColumns(defaultColumns));
+    } else {
+      dispatch(setColumns(boardColumns));
+    }
+    
     dispatch(setLoading(false));
-    return mockColumns;
+    return boardColumns;
   } catch (error) {
     dispatch(setError((error as Error).message));
     dispatch(setLoading(false));
@@ -198,26 +262,18 @@ export const fetchTasks = (columnId: number) => async (dispatch: any) => {
   try {
     dispatch(setLoading(true));
     
-    // Mock tasks for now that match the schema
-    const mockTasks = Array.from({ length: 3 }).map((_, i) => ({
-      id: columnId * 100 + i,
-      title: `Task ${i + 1} in column ${columnId}`,
-      description: `This is a mock task ${i + 1} in column ${columnId}`,
-      columnId,
-      order: i,
-      assigneeId: null,
-      dueDate: null,
-      priority: i === 0 ? 'high' : i === 1 ? 'medium' : 'low',
-      category: i === 0 ? 'feature' : i === 1 ? 'bug' : 'ui',
-      isCompleted: false,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    }));
+    // Query tasks for this column from Firebase
+    const tasks = await getDocuments('tasks');
     
-    // In a real app, you would fetch tasks from API
-    dispatch(setTasks({ columnId, tasks: mockTasks }));
+    // Filter tasks by columnId and convert any Firebase timestamps
+    const columnTasks = tasks
+      .filter((task: any) => task.columnId === columnId)
+      .map(convertFirebaseTimestamps)
+      .sort((a: any, b: any) => a.order - b.order);
+    
+    dispatch(setTasks({ columnId, tasks: columnTasks }));
     dispatch(setLoading(false));
-    return mockTasks;
+    return columnTasks;
   } catch (error) {
     dispatch(setError((error as Error).message));
     dispatch(setLoading(false));
@@ -225,42 +281,203 @@ export const fetchTasks = (columnId: number) => async (dispatch: any) => {
   }
 };
 
-export const createColumn = (columnData: any) => (dispatch: any) => {
-  // In a real application, you would make an API call here
-  const newColumn = {
-    ...columnData,
-    id: Date.now(),
-    createdAt: new Date()
-  };
-  
-  dispatch(addColumn(newColumn));
-  return newColumn;
+export const createColumn = (columnData: any) => async (dispatch: any) => {
+  try {
+    dispatch(setLoading(true));
+    
+    const newColumn = {
+      ...columnData,
+      id: Date.now(),
+      createdAt: new Date()
+    };
+    
+    // Create the column in Firebase
+    await createDocument('columns', newColumn.id.toString(), newColumn);
+    
+    // Update local state
+    dispatch(addColumn(newColumn));
+    
+    dispatch(setLoading(false));
+    return newColumn;
+  } catch (error) {
+    dispatch(setError((error as Error).message));
+    dispatch(setLoading(false));
+    throw error;
+  }
+};
+
+export const updateColumnAction = (columnData: any) => async (dispatch: any) => {
+  try {
+    dispatch(setLoading(true));
+    
+    const updatedColumn = {
+      ...columnData,
+      updatedAt: new Date()
+    };
+    
+    // Update the column in Firebase
+    await updateDocument('columns', updatedColumn.id.toString(), updatedColumn);
+    
+    // Update local state
+    dispatch(boardSlice.actions.updateColumn(updatedColumn));
+    
+    dispatch(setLoading(false));
+    return updatedColumn;
+  } catch (error) {
+    dispatch(setError((error as Error).message));
+    dispatch(setLoading(false));
+    throw error;
+  }
+};
+
+export const updateTaskAction = (taskData: Task): AppThunk<Promise<Task>> => async (dispatch) => {
+  try {
+    dispatch(setLoading(true));
+    
+    const updatedTask = {
+      ...taskData,
+      updatedAt: new Date()
+    };
+    
+    // Update the task in Firebase
+    await updateDocument('tasks', updatedTask.id.toString(), updatedTask);
+    
+    // Update local state
+    dispatch(updateTask(updatedTask));
+    
+    dispatch(setLoading(false));
+    return updatedTask;
+  } catch (error) {
+    dispatch(setError((error as Error).message));
+    dispatch(setLoading(false));
+    throw error;
+  }
+};
+
+export const deleteTaskAction = (payload: { columnId: number, taskId: number }): AppThunk<Promise<boolean>> => async (dispatch) => {
+  try {
+    dispatch(setLoading(true));
+    
+    // Delete the task in Firebase
+    await deleteDocument('tasks', payload.taskId.toString());
+    
+    // Update local state
+    dispatch(removeTask(payload));
+    
+    dispatch(setLoading(false));
+    return true;
+  } catch (error) {
+    dispatch(setError((error as Error).message));
+    dispatch(setLoading(false));
+    throw error;
+  }
+};
+
+export const deleteColumnAction = (columnId: number): AppThunk<Promise<boolean>> => async (dispatch) => {
+  try {
+    dispatch(setLoading(true));
+    
+    // Delete the column in Firebase
+    await deleteDocument('columns', columnId.toString());
+    
+    // Also delete all tasks in this column
+    const tasks = await getDocuments('tasks');
+    const columnTasks = tasks.filter((task: any) => task.columnId === columnId);
+    
+    await Promise.all(
+      columnTasks.map((task: any) => 
+        deleteDocument('tasks', task.id.toString())
+      )
+    );
+    
+    // Update local state
+    dispatch(removeColumn(columnId));
+    
+    dispatch(setLoading(false));
+    return true;
+  } catch (error) {
+    dispatch(setError((error as Error).message));
+    dispatch(setLoading(false));
+    throw error;
+  }
+};
+
+export const moveTaskAction = (payload: { id: number; columnId: number; order: number }): AppThunk<Promise<boolean>> => async (dispatch) => {
+  try {
+    dispatch(setLoading(true));
+    
+    // Get the task from Firebase
+    const task = await getDocument('tasks', payload.id.toString());
+    
+    if (task) {
+      const updatedTask = {
+        ...task,
+        columnId: payload.columnId,
+        order: payload.order,
+        updatedAt: new Date()
+      };
+      
+      // Update the task in Firebase
+      await updateDocument('tasks', updatedTask.id.toString(), updatedTask);
+      
+      // Update local state
+      dispatch(moveTask(payload));
+    }
+    
+    dispatch(setLoading(false));
+    return true;
+  } catch (error) {
+    dispatch(setError((error as Error).message));
+    dispatch(setLoading(false));
+    throw error;
+  }
 };
 
 export const fetchBoard = (boardId: number) => async (dispatch: any) => {
   try {
     dispatch(setLoading(true));
     
-    // Mock board data for now that matches the schema
-    const mockBoard = {
-      id: boardId,
-      name: `Board ${boardId}`,
-      workspaceId: 1,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
+    // Try to get the board from Firebase
+    let board;
+    try {
+      board = await getDocument('boards', boardId.toString());
+    } catch (error) {
+      console.log('Board not found, creating a default board...');
+    }
     
-    // In a real app, you would fetch board from API
-    dispatch(setCurrentBoard(mockBoard));
+    // If board doesn't exist, create a default one
+    if (!board) {
+      board = {
+        id: boardId,
+        name: `Board ${boardId}`,
+        workspaceId: 1,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+      
+      // Save the default board to Firebase
+      await createDocument('boards', boardId.toString(), board);
+    }
     
-    // Get columns and tasks
+    // Convert any Firebase timestamps
+    board = convertFirebaseTimestamps(board);
+    
+    // Update local state
+    dispatch(setCurrentBoard(board));
+    
+    // Get columns for this board
     await dispatch(fetchColumns(boardId));
     
-    const mockColumns = [1, 2, 3]; // placeholder column IDs from fetchColumns
-    await Promise.all(mockColumns.map(columnId => dispatch(fetchTasks(columnId))));
+    // Get tasks for each column
+    const columns = await getDocuments('columns');
+    const boardColumns = columns.filter((col: any) => col.boardId === boardId);
+    
+    await Promise.all(
+      boardColumns.map((column: any) => dispatch(fetchTasks(column.id)))
+    );
     
     dispatch(setLoading(false));
-    return mockBoard;
+    return board;
   } catch (error) {
     dispatch(setError((error as Error).message));
     dispatch(setLoading(false));
