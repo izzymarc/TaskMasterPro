@@ -1,20 +1,27 @@
 import { useEffect, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useRoute } from 'wouter';
-import { RootState } from '@/store';
-import { fetchBoard, fetchColumns, fetchTasks, clearBoard } from '@/store/slices/boardSlice';
+import { RootState, AppDispatch } from '@/store';
+import { 
+  fetchBoard, 
+  fetchColumns, 
+  fetchTasks, 
+  clearBoard, 
+  setCurrentBoard 
+} from '@/store/slices/boardSlice';
 import { Button } from '@/components/ui/button';
 import Sidebar from '@/components/layout/Sidebar';
 import Topbar from '@/components/layout/Topbar';
 import KanbanBoard from '@/components/board/KanbanBoard';
 import DragLayer from '@/components/board/DragLayer';
 import CreateTaskModal from '@/components/modals/CreateTaskModal';
+import EditableTitle from '@/components/board/EditableTitle';
 import { useMobile } from '@/hooks/use-mobile';
 import { useToast } from '@/hooks/use-toast';
 import type { User } from '@shared/schema';
 
 const Board = () => {
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   const { toast } = useToast();
   const [match, params] = useRoute('/board/:boardId');
   const boardId = params?.boardId ? parseInt(params.boardId) : 0;
@@ -26,6 +33,25 @@ const Board = () => {
   const isMobile = useMobile();
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
   const [isTaskModalOpen, setTaskModalOpen] = useState(false);
+  
+  // Handle board title change
+  const handleBoardTitleChange = (newTitle: string) => {
+    if (currentBoard) {
+      const updatedBoard = {
+        ...currentBoard,
+        name: newTitle,
+        updatedAt: new Date()
+      };
+      
+      dispatch(setCurrentBoard(updatedBoard));
+      
+      // In a real app, we would also update the board on the server
+      toast({
+        title: "Board updated",
+        description: "Board name successfully changed",
+      });
+    }
+  };
 
   // Fetch board data on mount
   useEffect(() => {
@@ -119,8 +145,9 @@ const Board = () => {
           onMenuClick={() => setSidebarOpen(!sidebarOpen)} 
           onNewTask={() => setTaskModalOpen(true)} 
           board={currentBoard}
-          lastUpdated={currentBoard.updatedAt}
+          lastUpdated={currentBoard.updatedAt ? new Date(currentBoard.updatedAt) : undefined}
           teamMembers={teamMembers}
+          onTitleChange={handleBoardTitleChange}
         />
         
         <KanbanBoard boardId={boardId} users={teamMembers} />

@@ -11,6 +11,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
+import EditableTitle from '@/components/board/EditableTitle';
 import type { Board } from '@shared/schema';
 
 interface TopbarProps {
@@ -20,6 +21,7 @@ interface TopbarProps {
   lastUpdated?: Date;
   teamMembers?: any[];
   showFilters?: boolean;
+  onTitleChange?: (newTitle: string) => void;
 }
 
 const Topbar = ({
@@ -28,7 +30,8 @@ const Topbar = ({
   board,
   lastUpdated,
   teamMembers = [],
-  showFilters = true
+  showFilters = true,
+  onTitleChange
 }: TopbarProps) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState('all');
@@ -73,7 +76,19 @@ const Topbar = ({
           </Button>
           
           <div>
-            <h1 className="text-lg font-semibold text-neutral-800">{board?.name || 'Board'}</h1>
+            {board ? (
+              <EditableTitle 
+                title={board.name} 
+                onSave={(newTitle) => {
+                  if (onTitleChange) {
+                    onTitleChange(newTitle);
+                  }
+                }}
+                className="text-lg font-semibold text-neutral-800"
+              />
+            ) : (
+              <h1 className="text-lg font-semibold text-neutral-800">Board</h1>
+            )}
             <div className="flex items-center text-sm text-neutral-500">
               <p>{formatLastUpdated(lastUpdated)}</p>
               {teamMembers && teamMembers.length > 0 && (

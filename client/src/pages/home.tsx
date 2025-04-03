@@ -39,7 +39,34 @@ const Dashboard = () => {
   const dispatch = useDispatch();
   const workspaces = useSelector((state: RootState) => state.user.workspaces);
   const currentUser = useSelector((state: RootState) => state.user.currentUser);
-  const boards = []; // In a real app, this would come from the redux state
+  
+  // Create some demo boards for display
+  const [boards, setBoards] = useState([
+    { 
+      id: 1, 
+      name: 'Product Development', 
+      workspaceId: 1,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      description: 'Main product roadmap and feature planning board'
+    },
+    { 
+      id: 2, 
+      name: 'Marketing Campaign Q2', 
+      workspaceId: 1,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      description: 'Q2 marketing strategy and campaign planning'
+    },
+    { 
+      id: 3, 
+      name: 'Website Redesign', 
+      workspaceId: 2,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      description: 'Planning and tasks for the website overhaul project'
+    }
+  ]);
   const isMobile = useMobile();
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
 
@@ -121,7 +148,27 @@ const Dashboard = () => {
         
         {boards.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {/* Board cards would go here */}
+            {boards.map(board => (
+              <Card key={board.id} className="hover:shadow-md transition-shadow">
+                <CardHeader className="pb-2">
+                  <CardTitle>{board.name}</CardTitle>
+                </CardHeader>
+                <CardContent className="pb-2">
+                  <CardDescription>{board.description}</CardDescription>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Last updated: {new Date(board.updatedAt).toLocaleDateString()}
+                  </p>
+                </CardContent>
+                <CardFooter>
+                  <Link href={`/board/${board.id}`}>
+                    <Button variant="outline" className="w-full flex items-center justify-center">
+                      Open Board
+                      <ArrowRight className="h-4 w-4 ml-1" />
+                    </Button>
+                  </Link>
+                </CardFooter>
+              </Card>
+            ))}
           </div>
         ) : (
           <Card className="bg-neutral-50 border-dashed">
