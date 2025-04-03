@@ -1,6 +1,13 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import type { Board, Column, Task } from '@shared/schema';
+import type { Board, Column, Task as SchemaTask } from '@shared/schema';
 import type { RootState, AppDispatch, AppThunk } from '@/store';
+
+// Extended Task type with serialized dates for Redux
+export type Task = Omit<SchemaTask, 'createdAt' | 'updatedAt' | 'dueDate'> & {
+  createdAt: Date | string | null;
+  updatedAt: Date | string | null;
+  dueDate: Date | string | null;
+};
 
 interface BoardState {
   currentBoard: Board | null;
@@ -208,20 +215,30 @@ export const createTask = (taskData: any): AppThunk<Promise<Task>> => async (dis
   try {
     dispatch(setLoading(true));
     
+    // Process dates - Convert Date objects to ISO strings for serialization
+    const processedTaskData = { ...taskData };
+    if (processedTaskData.dueDate instanceof Date) {
+      processedTaskData.dueDate = processedTaskData.dueDate.toISOString();
+    }
+    
+    // Generate a timestamp-based ID
+    const taskId = Date.now();
+    
+    // Create task with string dates for Redux serialization
     const newTask = {
-      ...taskData,
-      id: Date.now(), // Generate an ID
-      createdAt: new Date(),
-      updatedAt: new Date()
+      ...processedTaskData,
+      id: taskId,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
     };
     
-    // Create the task in Firebase
-    await createDocument('tasks', newTask.id.toString(), newTask);
+    // Create the task in Firebase - serialize all dates
+    await createDocument('tasks', taskId.toString(), serializeDates(newTask));
     
-    // Update local state
+    // Update local state with serialized task
     dispatch(addTask({ 
       columnId: newTask.columnId, 
-      task: newTask 
+      task: newTask
     }));
     
     dispatch(setLoading(false));
@@ -351,15 +368,21 @@ export const updateTaskAction = (taskData: Task): AppThunk<Promise<Task>> => asy
   try {
     dispatch(setLoading(true));
     
+    // Process dates for serialization
+    const processedTaskData = { ...taskData };
+    if (processedTaskData.dueDate instanceof Date) {
+      processedTaskData.dueDate = processedTaskData.dueDate.toISOString();
+    }
+    
     const updatedTask = {
-      ...taskData,
-      updatedAt: new Date()
+      ...processedTaskData,
+      updatedAt: new Date().toISOString()
     };
     
-    // Update the task in Firebase
-    await updateDocument('tasks', updatedTask.id.toString(), updatedTask);
+    // Update the task in Firebase with serialized dates
+    await updateDocument('tasks', updatedTask.id.toString(), serializeDates(updatedTask));
     
-    // Update local state
+    // Update local state with serialized task
     dispatch(updateTask(updatedTask));
     
     dispatch(setLoading(false));
@@ -424,18 +447,30 @@ export const moveTaskAction = (payload: { id: number; columnId: number; order: n
     dispatch(setLoading(true));
     
     // Get the task from Firebase
-    const task = await getDocument('tasks', payload.id.toString());
+    const taskData = await getDocument('tasks', payload.id.toString());
     
-    if (task) {
-      const updatedTask = {
-        ...task,
+    if (taskData) {
+      // Cast taskData to any first to avoid TypeScript errors
+      const task = taskData as any;
+      
+      // Create a properly typed task object with serialized dates
+      const updatedTask: Task = {
+        id: task.id,
+        title: task.title || '',
+        description: task.description || null,
         columnId: payload.columnId,
         order: payload.order,
-        updatedAt: new Date()
+        assigneeId: task.assigneeId || null,
+        priority: task.priority || 'medium',
+        category: task.category || 'feature',
+        isCompleted: task.isCompleted || false,
+        createdAt: task.createdAt ? (task.createdAt instanceof Date ? task.createdAt.toISOString() : task.createdAt) : null,
+        updatedAt: new Date().toISOString(),
+        dueDate: task.dueDate ? (task.dueDate instanceof Date ? task.dueDate.toISOString() : task.dueDate) : null
       };
       
-      // Update the task in Firebase
-      await updateDocument('tasks', updatedTask.id.toString(), updatedTask);
+      // Update the task in Firebase with serialized dates
+      await updateDocument('tasks', updatedTask.id.toString(), serializeDates(updatedTask));
       
       // Update local state
       dispatch(moveTask(payload));
@@ -468,8 +503,8 @@ export const fetchBoard = (boardId: number) => async (dispatch: any) => {
         id: boardId,
         name: `Board ${boardId}`,
         workspaceId: 1,
-        createdAt: new Date(),
-        updatedAt: new Date()
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
       };
       
       // Save the default board to Firebase
