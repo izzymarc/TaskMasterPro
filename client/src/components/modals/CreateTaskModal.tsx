@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { useSelector, useDispatch } from 'react-redux';
+import type { AppDispatch } from '@/store';
 import { RootState } from '@/store';
 import { createTask, updateTask } from '@/store/slices/boardSlice';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -51,9 +52,10 @@ const taskSchema = insertTaskSchema.extend({
 });
 
 const CreateTaskModal = ({ isOpen, onClose, columnId, editTask }: CreateTaskModalProps) => {
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   const { toast } = useToast();
   const columns = useSelector((state: RootState) => state.board.columns);
+  const tasks = useSelector((state: RootState) => state.board.tasks);
   const users = useSelector((state: RootState) => [
     // In a real app, this would come from the user state
     { id: 1, username: 'Alex Johnson' },
@@ -115,14 +117,16 @@ const CreateTaskModal = ({ isOpen, onClose, columnId, editTask }: CreateTaskModa
 
   const onSubmit = (data: z.infer<typeof taskSchema>) => {
     if (editTask) {
-      dispatch(updateTask({
-        id: editTask.id,
-        data: {
-          ...data,
-          // Convert date to ISO string for storage
-          dueDate: data.dueDate ? data.dueDate.toISOString() : null,
-        }
-      }));
+      // Create an updated task with all existing properties plus the changes
+      const updatedTask = {
+        ...editTask,
+        ...data,
+        // Convert date to ISO string for storage
+        dueDate: data.dueDate ? data.dueDate : null,
+        updatedAt: new Date()
+      };
+      
+      dispatch(updateTask(updatedTask));
       
       toast({
         title: 'Task updated',
@@ -130,17 +134,18 @@ const CreateTaskModal = ({ isOpen, onClose, columnId, editTask }: CreateTaskModa
       });
     } else {
       // For new tasks, calculate order (add to end of column)
-      const tasksInColumn = Object.values(useSelector((state: RootState) => state.board.tasks))
-        .flat()
-        .filter(t => t.columnId === data.columnId);
-        
-      data.order = tasksInColumn.length;
+      const tasksInColumn = tasks[data.columnId] || [];
       
-      dispatch(createTask({
+      const newData = {
         ...data,
+        order: tasksInColumn.length,
         // Convert date to ISO string for storage
-        dueDate: data.dueDate ? data.dueDate.toISOString() : undefined,
-      }));
+        dueDate: data.dueDate ? data.dueDate : null,
+      };
+      
+      // Use the thunk action creator with proper dispatch casting
+      // @ts-ignore - The thunk action is correctly typed in the store
+      dispatch(createTask(newData));
       
       toast({
         title: 'Task created',
@@ -184,7 +189,11 @@ const CreateTaskModal = ({ isOpen, onClose, columnId, editTask }: CreateTaskModa
                     <Textarea
                       placeholder="Task description"
                       rows={3}
-                      {...field}
+                      value={typeof field.value === 'string' ? field.value : ''}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      ref={field.ref}
+                      name={field.name}
                     />
                   </FormControl>
                   <FormMessage />

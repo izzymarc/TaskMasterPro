@@ -66,33 +66,53 @@ export const boardSlice = createSlice({
       }
     },
     moveTask: (state, action: PayloadAction<{ 
-      taskId: number;
-      sourceColumnId: number;
-      destinationColumnId: number;
-      newIndex: number;
+      id: number;
+      columnId: number;
+      order: number;
     }>) => {
-      const { taskId, sourceColumnId, destinationColumnId, newIndex } = action.payload;
+      const { id, columnId, order } = action.payload;
       
-      // Find task in source column
-      const sourceTaskIndex = state.tasks[sourceColumnId]?.findIndex(task => task.id === taskId);
+      // Find the source column that contains the task
+      let sourceColumnId: number | undefined;
+      let sourceTaskIndex: number = -1;
       
-      if (sourceTaskIndex !== undefined && sourceTaskIndex !== -1) {
+      // Find the task in all columns
+      Object.entries(state.tasks).forEach(([colId, tasks]) => {
+        const taskIndex = tasks.findIndex(task => task.id === id);
+        if (taskIndex !== -1) {
+          sourceColumnId = Number(colId);
+          sourceTaskIndex = taskIndex;
+        }
+      });
+      
+      if (sourceColumnId !== undefined && sourceTaskIndex !== -1) {
         // Copy the task
-        const [movedTask] = state.tasks[sourceColumnId].splice(sourceTaskIndex, 1);
+        const movedTask = state.tasks[sourceColumnId][sourceTaskIndex];
         
-        // Update task column ID
-        const updatedTask = { ...movedTask, columnId: destinationColumnId, order: newIndex };
+        // Remove from source column
+        state.tasks[sourceColumnId] = state.tasks[sourceColumnId].filter(task => task.id !== id);
+        
+        // Update task column ID and order
+        const updatedTask = { ...movedTask, columnId, order };
         
         // Ensure destination column tasks array exists
-        if (!state.tasks[destinationColumnId]) {
-          state.tasks[destinationColumnId] = [];
+        if (!state.tasks[columnId]) {
+          state.tasks[columnId] = [];
         }
         
-        // Insert at the correct position
-        state.tasks[destinationColumnId].splice(newIndex, 0, updatedTask);
+        // Add to destination column
+        state.tasks[columnId].push(updatedTask);
         
-        // Update order of all tasks in destination column
-        state.tasks[destinationColumnId] = state.tasks[destinationColumnId].map((task, index) => ({
+        // Sort tasks by order
+        state.tasks[columnId].sort((a, b) => a.order - b.order);
+        
+        // Update order of all tasks in both columns
+        state.tasks[sourceColumnId] = state.tasks[sourceColumnId].map((task, index) => ({
+          ...task,
+          order: index
+        }));
+        
+        state.tasks[columnId] = state.tasks[columnId].map((task, index) => ({
           ...task,
           order: index
         }));

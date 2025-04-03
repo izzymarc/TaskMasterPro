@@ -68,10 +68,14 @@ const TaskCard = ({ task, assignee, onEdit, commentCount = 0 }: TaskCardProps) =
   }));
 
   const handleToggleComplete = () => {
-    dispatch(updateTask({
-      id: task.id,
-      data: { isCompleted: !task.isCompleted }
-    }));
+    // Create a copy of the task with the updated isCompleted value
+    const updatedTask = {
+      ...task,
+      isCompleted: !task.isCompleted,
+      updatedAt: new Date()
+    };
+    
+    dispatch(updateTask(updatedTask));
     
     toast({
       title: task.isCompleted ? 'Task marked as incomplete' : 'Task marked as complete',
@@ -80,7 +84,10 @@ const TaskCard = ({ task, assignee, onEdit, commentCount = 0 }: TaskCardProps) =
   };
 
   const handleDelete = () => {
-    dispatch(deleteTask(task.id));
+    dispatch(deleteTask({
+      columnId: task.columnId,
+      taskId: task.id
+    }));
     setIsDialogOpen(false);
     
     toast({

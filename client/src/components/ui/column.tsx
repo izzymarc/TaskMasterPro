@@ -35,7 +35,7 @@ const TaskColumn = ({ column, tasks, users, onCreateTask, onEditColumn }: Column
   const dispatch = useDispatch();
   const { toast } = useToast();
 
-  const findAssignee = (assigneeId?: number) => {
+  const findAssignee = (assigneeId?: number | null) => {
     if (!assigneeId) return undefined;
     return users.find(user => user.id === assigneeId);
   };
@@ -46,7 +46,11 @@ const TaskColumn = ({ column, tasks, users, onCreateTask, onEditColumn }: Column
       if (item.columnId !== column.id) {
         // Calculate new order - add to the end of the column
         const newOrder = tasks.length;
-        dispatch(moveTask({ id: item.id, columnId: column.id, order: newOrder }));
+        dispatch(moveTask({ 
+          id: item.id, 
+          columnId: column.id, 
+          order: newOrder 
+        }));
         
         toast({
           title: 'Task moved',
