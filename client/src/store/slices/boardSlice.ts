@@ -18,12 +18,29 @@ const initialState: BoardState = {
   error: null
 };
 
+// Helper to serialize dates for Redux storage
+const serializeDates = (obj: any): any => {
+  if (!obj) return obj;
+  
+  const result = { ...obj };
+  
+  Object.keys(result).forEach(key => {
+    if (result[key] instanceof Date) {
+      result[key] = result[key].toISOString();
+    } else if (typeof result[key] === 'object' && result[key] !== null) {
+      result[key] = serializeDates(result[key]);
+    }
+  });
+  
+  return result;
+};
+
 export const boardSlice = createSlice({
   name: 'board',
   initialState,
   reducers: {
     setCurrentBoard: (state, action: PayloadAction<Board>) => {
-      state.currentBoard = action.payload;
+      state.currentBoard = serializeDates(action.payload);
     },
     setColumns: (state, action: PayloadAction<Column[]>) => {
       state.columns = action.payload;

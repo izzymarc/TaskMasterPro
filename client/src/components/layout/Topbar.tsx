@@ -84,7 +84,7 @@ const Topbar = ({
                       <Avatar key={index} className="h-5 w-5 border border-white">
                         <AvatarImage src={member.avatarUrl} alt={member.name} />
                         <AvatarFallback className="text-[10px]">
-                          {member.name.charAt(0).toUpperCase()}
+                          {member.username ? member.username.charAt(0).toUpperCase() : 'U'}
                         </AvatarFallback>
                       </Avatar>
                     ))}

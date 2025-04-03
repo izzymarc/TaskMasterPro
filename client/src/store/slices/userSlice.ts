@@ -18,6 +18,23 @@ const initialState: UserState = {
   error: null
 };
 
+// Helper function to convert Date objects to ISO strings for Redux
+const serializeDates = (obj: any): any => {
+  if (!obj) return obj;
+  
+  const result = { ...obj };
+  
+  Object.keys(result).forEach(key => {
+    if (result[key] instanceof Date) {
+      result[key] = result[key].toISOString();
+    } else if (typeof result[key] === 'object' && result[key] !== null) {
+      result[key] = serializeDates(result[key]);
+    }
+  });
+  
+  return result;
+};
+
 export const logout = createAsyncThunk('user/logout', async () => {
   await firebaseLogout();
   return null;
@@ -28,7 +45,7 @@ export const userSlice = createSlice({
   initialState,
   reducers: {
     setUser: (state, action: PayloadAction<User>) => {
-      state.currentUser = action.payload;
+      state.currentUser = serializeDates(action.payload);
       state.loading = false;
       state.error = null;
     },
@@ -40,16 +57,16 @@ export const userSlice = createSlice({
       state.loading = false;
     },
     setWorkspaces: (state, action: PayloadAction<Workspace[]>) => {
-      state.workspaces = action.payload;
+      state.workspaces = action.payload.map(workspace => serializeDates(workspace));
     },
     setTeams: (state, action: PayloadAction<Team[]>) => {
-      state.teams = action.payload;
+      state.teams = action.payload.map(team => serializeDates(team));
     },
     addWorkspace: (state, action: PayloadAction<Workspace>) => {
-      state.workspaces.push(action.payload);
+      state.workspaces.push(serializeDates(action.payload));
     },
     addTeam: (state, action: PayloadAction<Team>) => {
-      state.teams.push(action.payload);
+      state.teams.push(serializeDates(action.payload));
     }
   },
   extraReducers: (builder) => {
