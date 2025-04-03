@@ -11,11 +11,19 @@ import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/home";
 import Board from "@/pages/board";
+import Workspace from "@/pages/workspace";
 
 function Router() {
   return (
     <Switch>
       <Route path="/" component={Home} />
+      <Route path="/workspace/:workspaceId">
+        {(params) => (
+          <ProtectedRoute>
+            <Workspace />
+          </ProtectedRoute>
+        )}
+      </Route>
       <Route path="/board/:boardId">
         {(params) => (
           <ProtectedRoute>

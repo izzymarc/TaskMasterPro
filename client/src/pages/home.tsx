@@ -38,74 +38,104 @@ const WelcomeScreen = ({ onLogin }: { onLogin: () => void }) => {
 const Dashboard = () => {
   const dispatch = useDispatch();
   const workspaces = useSelector((state: RootState) => state.user.workspaces);
+  const currentUser = useSelector((state: RootState) => state.user.currentUser);
   const boards = []; // In a real app, this would come from the redux state
   const isMobile = useMobile();
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
 
   // Workspace cards
-  const WorkspaceList = () => (
-    <div className="mb-8">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-semibold">Workspaces</h2>
-        <Button variant="outline" size="sm" className="flex items-center">
-          <Plus className="h-4 w-4 mr-1" />
-          New Workspace
-        </Button>
-      </div>
+  const WorkspaceList = () => {
+    // Add a handler for creating a new workspace (in a real app this would add to Firebase)
+    const handleNewWorkspace = () => {
+      const newWorkspaceId = Date.now();
+      const newWorkspace = {
+        id: newWorkspaceId,
+        name: `New Workspace ${workspaces.length + 1}`,
+        ownerId: currentUser?.id || 1,
+        createdAt: new Date()
+      };
       
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {workspaces.map(workspace => (
-          <Card key={workspace.id} className="hover:shadow-md transition-shadow">
-            <CardHeader className="pb-2">
-              <CardTitle className="flex items-center">
-                <Layers className="h-5 w-5 mr-2 text-primary" />
-                {workspace.name}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="pb-2">
-              <CardDescription>
-                Workspace created on {workspace.createdAt ? new Date(workspace.createdAt).toLocaleDateString() : 'N/A'}
-              </CardDescription>
-            </CardContent>
-            <CardFooter>
-              <Link href={`/workspace/${workspace.id}`}>
-                <Button variant="outline" className="w-full flex items-center justify-center">
-                  Open Workspace
-                  <ArrowRight className="h-4 w-4 ml-1" />
-                </Button>
-              </Link>
-            </CardFooter>
-          </Card>
-        ))}
+      dispatch(setWorkspaces([...workspaces, newWorkspace]));
+    };
+    
+    return (
+      <div className="mb-8">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-semibold">Workspaces</h2>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="flex items-center"
+            onClick={handleNewWorkspace}
+          >
+            <Plus className="h-4 w-4 mr-1" />
+            New Workspace
+          </Button>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {workspaces.map(workspace => (
+            <Card key={workspace.id} className="hover:shadow-md transition-shadow">
+              <CardHeader className="pb-2">
+                <CardTitle className="flex items-center">
+                  <Layers className="h-5 w-5 mr-2 text-primary" />
+                  {workspace.name}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pb-2">
+                <CardDescription>
+                  Workspace created on {workspace.createdAt ? new Date(workspace.createdAt).toLocaleDateString() : 'N/A'}
+                </CardDescription>
+              </CardContent>
+              <CardFooter>
+                <Link href={`/workspace/${workspace.id}`}>
+                  <Button variant="outline" className="w-full flex items-center justify-center">
+                    Open Workspace
+                    <ArrowRight className="h-4 w-4 ml-1" />
+                  </Button>
+                </Link>
+              </CardFooter>
+            </Card>
+          ))}
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   // Recent boards
-  const RecentBoards = () => (
-    <div>
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-semibold">Recent Boards</h2>
-        <Button variant="outline" size="sm" className="flex items-center">
-          <Plus className="h-4 w-4 mr-1" />
-          New Board
-        </Button>
-      </div>
-      
-      {boards.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {/* Board cards would go here */}
+  const RecentBoards = () => {
+    // Assuming the first workspace is the default one for new boards
+    const defaultWorkspaceId = workspaces.length > 0 ? workspaces[0].id : 1;
+    
+    return (
+      <div>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-semibold">Recent Boards</h2>
+          <Link href={`/workspace/${defaultWorkspaceId}`}>
+            <Button variant="outline" size="sm" className="flex items-center">
+              <Plus className="h-4 w-4 mr-1" />
+              New Board
+            </Button>
+          </Link>
         </div>
-      ) : (
-        <Card className="bg-neutral-50 border-dashed">
-          <CardContent className="py-8 text-center">
-            <p className="text-neutral-500 mb-4">You don't have any boards yet</p>
-            <Button>Create Your First Board</Button>
-          </CardContent>
-        </Card>
-      )}
-    </div>
-  );
+        
+        {boards.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {/* Board cards would go here */}
+          </div>
+        ) : (
+          <Card className="bg-neutral-50 border-dashed">
+            <CardContent className="py-8 text-center">
+              <p className="text-neutral-500 mb-4">You don't have any boards yet</p>
+              <Link href={`/workspace/${defaultWorkspaceId}`}>
+                <Button>Create Your First Board</Button>
+              </Link>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+    );
+  };
 
   return (
     <div className="flex h-screen overflow-hidden">
