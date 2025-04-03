@@ -2,13 +2,14 @@ import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, useLocation } from 'wouter';
 import { RootState } from '@/store';
-import { fetchWorkspaces, fetchUser, loginWithGoogle } from '@/store/slices/userSlice';
+import { setUser, setWorkspaces } from '@/store/slices/userSlice';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import Sidebar from '@/components/layout/Sidebar';
 import Topbar from '@/components/layout/Topbar';
 import { useMobile } from '@/hooks/use-mobile';
 import { useToast } from '@/hooks/use-toast';
+import { signInWithGoogle } from '@/lib/firebase';
 import { Layers, Plus, ArrowRight } from 'lucide-react';
 
 // Component for welcome screen when user is not logged in
@@ -63,7 +64,7 @@ const Dashboard = () => {
             </CardHeader>
             <CardContent className="pb-2">
               <CardDescription>
-                Workspace created on {new Date(workspace.createdAt).toLocaleDateString()}
+                Workspace created on {workspace.createdAt ? new Date(workspace.createdAt).toLocaleDateString() : 'N/A'}
               </CardDescription>
             </CardContent>
             <CardFooter>
@@ -147,7 +148,7 @@ const Home = () => {
 
   const handleLogin = async () => {
     try {
-      await dispatch(loginWithGoogle());
+      await signInWithGoogle();
       toast({
         title: "Login successful",
         description: "Welcome to TaskFlow!",
@@ -163,16 +164,34 @@ const Home = () => {
 
   // For demo purposes, let's use a hardcoded user since Firebase integration is not complete
   const mockLogin = () => {
-    dispatch({ 
-      type: 'user/loginWithGoogle/fulfilled', 
-      payload: {
+    const user = {
+      id: 1,
+      username: 'Alex Johnson',
+      email: 'alex@example.com',
+      avatarUrl: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80',
+      createdAt: new Date(),
+      password: ''
+    };
+    
+    dispatch(setUser(user));
+    
+    // Add some demo workspaces
+    const demoWorkspaces = [
+      {
         id: 1,
-        username: 'Alex Johnson',
-        email: 'alex@example.com',
-        avatarUrl: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80'
+        name: 'Product Team',
+        ownerId: 1,
+        createdAt: new Date()
+      },
+      {
+        id: 2,
+        name: 'Marketing',
+        ownerId: 1,
+        createdAt: new Date()
       }
-    });
-    dispatch(fetchWorkspaces(1));
+    ];
+    
+    dispatch(setWorkspaces(demoWorkspaces));
   };
 
   if (loading) {
