@@ -9,13 +9,6 @@ import { z } from 'zod';
 import { insertTaskSchema } from '@shared/schema';
 import { useToast } from '@/hooks/use-toast';
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog';
-import {
   Form,
   FormControl,
   FormField,
@@ -68,30 +61,65 @@ const CreateTaskModal = ({ isOpen, onClose, columnId, editTask }: CreateTaskModa
     { id: 4, username: 'Olivia Taylor' },
   ];
 
-  // Set initial form values
-  const defaultValues = {
-    title: editTask?.title || '',
-    description: editTask?.description || '',
-    columnId: columnId || editTask?.columnId || columns[0]?.id || 0,
-    order: editTask?.order || 0,
-    assigneeId: editTask?.assigneeId || null,
-    priority: (editTask?.priority as 'low' | 'medium' | 'high') || 'medium',
-    category: editTask?.category || 'feature',
-    dueDate: editTask?.dueDate ? new Date(editTask.dueDate) : null,
-    isCompleted: editTask?.isCompleted || false,
+  // Ensure we have at least a default value for columnId
+  const getDefaultColumnId = () => {
+    console.log('Getting default columnId. Provided columnId:', columnId);
+    console.log('Available columns for form:', columns);
+    
+    // First priority: use the explicitly provided columnId
+    if (columnId !== undefined) {
+      console.log('Using explicitly provided columnId:', columnId);
+      return columnId;
+    }
+    
+    // Second priority: use the column ID from the task being edited
+    if (editTask?.columnId) {
+      console.log('Using columnId from editTask:', editTask.columnId);
+      return editTask.columnId;
+    }
+    
+    // Third priority: use the first available column
+    if (columns.length > 0) {
+      console.log('Using first column as default:', columns[0].id);
+      return columns[0].id;
+    }
+    
+    // Fallback: use 0 (this should never happen in practice as we should always have columns)
+    console.log('No columns available, using default columnId: 0');
+    return 0;
+  };
+  
+  // Set initial form values with guaranteed columnId
+  const getDefaultValues = () => {
+    // Get the best columnId based on priorities
+    const defaultColumnId = getDefaultColumnId();
+    
+    console.log('Setting form default values with columnId:', defaultColumnId);
+    
+    return {
+      title: editTask?.title || '',
+      description: editTask?.description || '',
+      columnId: defaultColumnId,
+      order: editTask?.order || 0,
+      assigneeId: editTask?.assigneeId || null,
+      priority: (editTask?.priority as 'low' | 'medium' | 'high') || 'medium',
+      category: editTask?.category || 'feature',
+      dueDate: editTask?.dueDate ? new Date(editTask.dueDate) : null,
+      isCompleted: editTask?.isCompleted || false,
+    };
   };
 
   const form = useForm<z.infer<typeof taskSchema>>({
     resolver: zodResolver(taskSchema),
-    defaultValues,
+    defaultValues: getDefaultValues(),
   });
 
   // Make sure form is reset when modal is opened/closed or props change
   useEffect(() => {
     if (isOpen) {
-      form.reset(defaultValues);
+      form.reset(getDefaultValues());
     }
-  }, [isOpen, editTask, columnId, columns, form]);
+  }, [isOpen, editTask, columnId, columns]);
 
   const onSubmit = (data: z.infer<typeof taskSchema>) => {
     if (editTask) {
@@ -137,7 +165,7 @@ const CreateTaskModal = ({ isOpen, onClose, columnId, editTask }: CreateTaskModa
     console.log('Modal not rendering because isOpen is false');
     return null;
   }
-
+  
   console.log('Rendering modal with columns:', columns);
 
   return (
@@ -259,12 +287,21 @@ const CreateTaskModal = ({ isOpen, onClose, columnId, editTask }: CreateTaskModa
                 <FormItem>
                   <FormLabel>Status</FormLabel>
                   <Select
-                    onValueChange={(value) => field.onChange(parseInt(value))}
-                    defaultValue={field.value?.toString()}
+                    onValueChange={(value) => {
+                      console.log('Column selection changed to:', value);
+                      field.onChange(parseInt(value));
+                    }}
+                    value={field.value?.toString() || ''}
                   >
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select status" />
+                        <SelectValue placeholder="Select status">
+                          {field.value !== undefined && columns.length > 0 ? (
+                            columns.find(col => col.id === field.value)?.name || 'Select status'
+                          ) : (
+                            'Select status'
+                          )}
+                        </SelectValue>
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
@@ -291,14 +328,19 @@ const CreateTaskModal = ({ isOpen, onClose, columnId, editTask }: CreateTaskModa
                 <FormItem>
                   <FormLabel>Assignee</FormLabel>
                   <Select
-                    onValueChange={(value) => 
-                      field.onChange(value !== "unassigned" ? parseInt(value) : null)
-                    }
-                    defaultValue={field.value?.toString() || 'unassigned'}
+                    onValueChange={(value) => {
+                      console.log('Assignee selection changed to:', value);
+                      field.onChange(value !== "unassigned" ? parseInt(value) : null);
+                    }}
+                    value={field.value?.toString() || 'unassigned'}
                   >
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Unassigned" />
+                        <SelectValue placeholder="Unassigned">
+                          {field.value ? 
+                            users.find(user => user.id === field.value)?.username || 'Unassigned' 
+                            : 'Unassigned'}
+                        </SelectValue>
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>

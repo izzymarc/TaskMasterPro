@@ -34,6 +34,7 @@ const Board = () => {
   const isMobile = useMobile();
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
   const [isTaskModalOpen, setTaskModalOpen] = useState(false);
+  const [selectedColumnId, setSelectedColumnId] = useState<number | undefined>(undefined);
   
   // Handle board title change
   const handleBoardTitleChange = (newTitle: string) => {
@@ -65,6 +66,14 @@ const Board = () => {
       dispatch(clearBoard());
     };
   }, [boardId, dispatch]);
+  
+  // Update selectedColumnId when columns change
+  useEffect(() => {
+    if (columns.length > 0 && !selectedColumnId) {
+      console.log('Updating selectedColumnId from columns change:', columns[0].id);
+      setSelectedColumnId(columns[0].id);
+    }
+  }, [columns, selectedColumnId]);
 
   // Show toast if there's an error
   useEffect(() => {
@@ -146,6 +155,16 @@ const Board = () => {
           onMenuClick={() => setSidebarOpen(!sidebarOpen)} 
           onNewTask={() => {
             console.log('New Task button clicked, current modal state:', isTaskModalOpen);
+            
+            // Select first column by default if columns are available
+            if (columns.length > 0) {
+              console.log('Setting selected column to first column:', columns[0].id);
+              setSelectedColumnId(columns[0].id);
+            } else {
+              console.log('No columns available to select');
+              setSelectedColumnId(undefined);
+            }
+            
             setTaskModalOpen(true);
             console.log('Modal state after setting:', true);
           }} 
@@ -159,8 +178,11 @@ const Board = () => {
         
         <CreateTaskModal
           isOpen={isTaskModalOpen}
-          onClose={() => setTaskModalOpen(false)}
-          columnId={columns.length > 0 ? columns[0].id : undefined}
+          onClose={() => {
+            setTaskModalOpen(false);
+            // Keep the selectedColumnId as it is, we'll reuse it next time
+          }}
+          columnId={selectedColumnId}
         />
         
         <DragLayer />
