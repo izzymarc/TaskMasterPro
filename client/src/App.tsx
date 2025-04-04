@@ -8,6 +8,7 @@ import { queryClient } from "./lib/queryClient";
 import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider } from "@/contexts/AuthContext";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
+import AuthRedirectHandler from "@/components/auth/AuthRedirectHandler";
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/home";
 import Board from "@/pages/board";
@@ -48,6 +49,7 @@ function App() {
       <DndProvider backend={HTML5Backend}>
         <QueryClientProvider client={queryClient}>
           <AuthProvider>
+            <AuthRedirectHandler />
             <Router />
             <Toaster />
           </AuthProvider>

@@ -12,6 +12,8 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Settings, Layers, Users, ChevronDown } from 'lucide-react';
+import { LoginButton } from '@/components/auth/LoginButton';
+import { LogoutButton } from '@/components/auth/LogoutButton';
 
 interface SidebarProps {
   isMobile?: boolean;
@@ -173,14 +175,12 @@ const Sidebar = ({ isMobile = false, isOpen = true, onToggle }: SidebarProps) =>
                 <DropdownMenuContent align="end">
                   <DropdownMenuItem>Profile</DropdownMenuItem>
                   <DropdownMenuItem>Settings</DropdownMenuItem>
-                  <DropdownMenuItem className="text-red-500 focus:text-red-500">
-                    Logout
-                  </DropdownMenuItem>
+                  <LogoutButton asDropdownItem />
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
           ) : (
-            <Button className="w-full">Login</Button>
+            <LoginButton className="w-full" />
           )}
         </div>
       </div>

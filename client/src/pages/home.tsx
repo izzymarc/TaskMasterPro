@@ -9,7 +9,8 @@ import Sidebar from '@/components/layout/Sidebar';
 import Topbar from '@/components/layout/Topbar';
 import { useMobile } from '@/hooks/use-mobile';
 import { useToast } from '@/hooks/use-toast';
-import { signInWithGoogle } from '@/lib/firebase';
+import { useAuth } from '@/contexts/AuthContext';
+import { LoginButton } from '@/components/auth/LoginButton';
 import { Layers, Plus, ArrowRight } from 'lucide-react';
 
 // Helper function to convert Date objects to strings before dispatching
@@ -34,7 +35,10 @@ const serializeDates = (obj: any): any => {
 };
 
 // Component for welcome screen when user is not logged in
-const WelcomeScreen = ({ onLogin }: { onLogin: () => void }) => {
+const WelcomeScreen = () => {
+  // Use the Firebase auth
+  const { isAuthenticated, isLoading } = useAuth();
+  
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-neutral-50 p-4">
       <div className="text-center max-w-xl">
@@ -47,9 +51,16 @@ const WelcomeScreen = ({ onLogin }: { onLogin: () => void }) => {
         <p className="text-neutral-600 mb-8">
           A collaborative task management application with drag-and-drop functionality, real-time updates, and team collaboration features.
         </p>
-        <Button className="px-6 py-2" size="lg" onClick={onLogin}>
-          Login with Google
-        </Button>
+
+        {isLoading ? (
+          <div className="flex justify-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
+          </div>
+        ) : (
+          <div className="flex justify-center space-x-4">
+            <LoginButton className="px-6 py-2" />
+          </div>
+        )}
       </div>
     </div>
   );
@@ -236,68 +247,47 @@ const Dashboard = () => {
 const Home = () => {
   const dispatch = useDispatch();
   const { toast } = useToast();
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
   const currentUser = useSelector((state: RootState) => state.user.currentUser);
   const loading = useSelector((state: RootState) => state.user.loading);
   const [, setLocation] = useLocation();
 
+  // Get workspaces from Redux store
+  const workspaces = useSelector((state: RootState) => state.user.workspaces);
+  
   useEffect(() => {
-    // In a real app, we would check if the user is already authenticated in Firebase
-    // and if so, fetch their data
-  }, [dispatch]);
-
-  const handleLogin = async () => {
-    try {
-      await signInWithGoogle();
-      toast({
-        title: "Login successful",
-        description: "Welcome to TaskFlow!",
-      });
-    } catch (error) {
-      toast({
-        title: "Login failed",
-        description: "Could not log in with Google",
-        variant: "destructive",
-      });
-    }
-  };
-
-
-
-  // For demo purposes, let's use a hardcoded user since Firebase integration is not complete
-  const mockLogin = () => {
-    const user = {
-      id: 1,
-      username: 'Alex Johnson',
-      email: 'alex@example.com',
-      avatarUrl: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80',
-      createdAt: new Date(),
-      password: ''
-    };
-    
-    // Properly serialize dates before dispatch
-    dispatch(setUser(serializeDates(user)));
-    
-    // Add some demo workspaces
-    const demoWorkspaces = [
-      {
-        id: 1,
-        name: 'Product Team',
-        ownerId: 1,
-        createdAt: new Date()
-      },
-      {
-        id: 2,
-        name: 'Marketing',
-        ownerId: 1,
-        createdAt: new Date()
+    // This effect would fetch user-specific data once authenticated
+    if (isAuthenticated && currentUser) {
+      // Here we would typically fetch user-specific data from the backend
+      console.log('User is authenticated, fetching user data');
+      
+      // For demo purposes, add some workspaces if none exist in Redux store
+      if (!workspaces || workspaces.length === 0) {
+        const demoWorkspaces = [
+          {
+            id: 1,
+            name: 'Product Team',
+            ownerId: currentUser.id,
+            createdAt: new Date()
+          },
+          {
+            id: 2,
+            name: 'Marketing',
+            ownerId: currentUser.id,
+            createdAt: new Date()
+          }
+        ];
+        
+        // Properly serialize dates before dispatch
+        dispatch(setWorkspaces(serializeDates(demoWorkspaces)));
       }
-    ];
-    
-    // Properly serialize dates before dispatch
-    dispatch(setWorkspaces(serializeDates(demoWorkspaces)));
-  };
+    }
+  // We're removing workspaces from the dependency array to prevent an infinite loop
+  // since we're potentially updating workspaces in the effect
+  }, [isAuthenticated, currentUser, dispatch]);
 
-  if (loading) {
+  // Loading state for the entire app
+  if (authLoading || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
@@ -305,7 +295,7 @@ const Home = () => {
     );
   }
 
-  return currentUser ? <Dashboard /> : <WelcomeScreen onLogin={mockLogin} />;
+  return currentUser ? <Dashboard /> : <WelcomeScreen />;
 };
 
 export default Home;
