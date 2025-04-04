@@ -98,19 +98,17 @@ const Sidebar = ({ isMobile = false, isOpen = true, onToggle }: SidebarProps) =>
                     
                     {expandedWorkspace === workspace.id && (
                       <div className="ml-8 mt-1 space-y-1">
-                        <Link href={`/workspace/${workspace.id}`}>
-                          <a className={`flex items-center px-4 py-2 rounded-md ${
+                        <Link href={`/workspace/${workspace.id}`}
+                          className={`flex items-center px-4 py-2 rounded-md ${
                             location === `/workspace/${workspace.id}` ? 'bg-blue-50 text-primary font-medium' : 'text-neutral-600 hover:bg-neutral-100'
                           }`}>
                             Overview
-                          </a>
                         </Link>
-                        <Link href={`/workspace/${workspace.id}/boards`}>
-                          <a className={`flex items-center px-4 py-2 rounded-md ${
+                        <Link href={`/workspace/${workspace.id}/boards`}
+                          className={`flex items-center px-4 py-2 rounded-md ${
                             location.startsWith(`/workspace/${workspace.id}/boards`) ? 'bg-blue-50 text-primary font-medium' : 'text-neutral-600 hover:bg-neutral-100'
                           }`}>
                             Boards
-                          </a>
                         </Link>
                       </div>
                     )}
@@ -140,13 +138,12 @@ const Sidebar = ({ isMobile = false, isOpen = true, onToggle }: SidebarProps) =>
               <ul className="space-y-1">
                 {getWorkspaceTeams(expandedWorkspace).map(team => (
                   <li key={team.id}>
-                    <Link href={`/team/${team.id}`}>
-                      <a className={`flex items-center px-4 py-2 rounded-md ${
+                    <Link href={`/team/${team.id}`}
+                      className={`flex items-center px-4 py-2 rounded-md ${
                         location === `/team/${team.id}` ? 'bg-blue-50 text-primary font-medium' : 'text-neutral-600 hover:bg-neutral-100'
                       }`}>
                         <Users className="h-5 w-5 mr-3" />
                         {team.name}
-                      </a>
                     </Link>
                   </li>
                 ))}

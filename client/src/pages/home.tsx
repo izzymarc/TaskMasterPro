@@ -12,6 +12,27 @@ import { useToast } from '@/hooks/use-toast';
 import { signInWithGoogle } from '@/lib/firebase';
 import { Layers, Plus, ArrowRight } from 'lucide-react';
 
+// Helper function to convert Date objects to strings before dispatching
+const serializeDates = (obj: any): any => {
+  if (!obj) return obj;
+  
+  if (Array.isArray(obj)) {
+    return obj.map(item => serializeDates(item));
+  }
+  
+  const result = { ...obj };
+  
+  Object.keys(result).forEach(key => {
+    if (result[key] instanceof Date) {
+      result[key] = result[key].toISOString();
+    } else if (typeof result[key] === 'object' && result[key] !== null) {
+      result[key] = serializeDates(result[key]);
+    }
+  });
+  
+  return result;
+};
+
 // Component for welcome screen when user is not logged in
 const WelcomeScreen = ({ onLogin }: { onLogin: () => void }) => {
   return (
@@ -82,7 +103,8 @@ const Dashboard = () => {
         createdAt: new Date()
       };
       
-      dispatch(setWorkspaces([...workspaces, newWorkspace]));
+      // Properly serialize dates before dispatch
+      dispatch(setWorkspaces(serializeDates([...workspaces, newWorkspace])));
     };
     
     return (
@@ -239,6 +261,8 @@ const Home = () => {
     }
   };
 
+
+
   // For demo purposes, let's use a hardcoded user since Firebase integration is not complete
   const mockLogin = () => {
     const user = {
@@ -250,7 +274,8 @@ const Home = () => {
       password: ''
     };
     
-    dispatch(setUser(user));
+    // Properly serialize dates before dispatch
+    dispatch(setUser(serializeDates(user)));
     
     // Add some demo workspaces
     const demoWorkspaces = [
@@ -268,7 +293,8 @@ const Home = () => {
       }
     ];
     
-    dispatch(setWorkspaces(demoWorkspaces));
+    // Properly serialize dates before dispatch
+    dispatch(setWorkspaces(serializeDates(demoWorkspaces)));
   };
 
   if (loading) {
