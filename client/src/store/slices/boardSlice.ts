@@ -215,35 +215,58 @@ export const createTask = (taskData: any): AppThunk<Promise<Task>> => async (dis
   try {
     dispatch(setLoading(true));
     
-    // Process dates - Convert Date objects to ISO strings for serialization
-    const processedTaskData = { ...taskData };
+    // Process the task data to ensure proper serialization
+    let processedTaskData = { ...taskData };
+    
+    // Ensure dates are properly serialized
     if (processedTaskData.dueDate instanceof Date) {
       processedTaskData.dueDate = processedTaskData.dueDate.toISOString();
     }
     
-    // Generate a timestamp-based ID
-    const taskId = Date.now();
+    if (processedTaskData.createdAt instanceof Date) {
+      processedTaskData.createdAt = processedTaskData.createdAt.toISOString();
+    }
     
-    // Create task with string dates for Redux serialization
-    const newTask = {
-      ...processedTaskData,
-      id: taskId,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
+    if (processedTaskData.updatedAt instanceof Date) {
+      processedTaskData.updatedAt = processedTaskData.updatedAt.toISOString();
+    }
     
-    // Create the task in Firebase - serialize all dates
-    await createDocument('tasks', taskId.toString(), serializeDates(newTask));
+    // Ensure id is set if not already provided
+    if (!processedTaskData.id) {
+      processedTaskData.id = Date.now();
+    }
     
-    // Update local state with serialized task
+    // Ensure required timestamps are set
+    if (!processedTaskData.createdAt) {
+      processedTaskData.createdAt = new Date().toISOString();
+    }
+    
+    if (!processedTaskData.updatedAt) {
+      processedTaskData.updatedAt = new Date().toISOString();
+    }
+    
+    // Ensure the task has a columnId
+    if (!processedTaskData.columnId && processedTaskData.columnId !== 0) {
+      console.error('Task creation failed: columnId is required');
+      dispatch(setError('Task creation failed: columnId is required'));
+      dispatch(setLoading(false));
+      throw new Error('Task creation failed: columnId is required');
+    }
+    
+    // Create the task in Firebase with serialized dates
+    console.log('Creating task:', processedTaskData);
+    await createDocument('tasks', processedTaskData.id.toString(), serializeDates(processedTaskData));
+    
+    // Update local state
     dispatch(addTask({ 
-      columnId: newTask.columnId, 
-      task: newTask
+      columnId: processedTaskData.columnId, 
+      task: processedTaskData
     }));
     
     dispatch(setLoading(false));
-    return newTask;
+    return processedTaskData;
   } catch (error) {
+    console.error('Error creating task:', error);
     dispatch(setError((error as Error).message));
     dispatch(setLoading(false));
     throw error;

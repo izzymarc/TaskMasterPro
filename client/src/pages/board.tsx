@@ -158,6 +158,7 @@ const Board = () => {
         <CreateTaskModal
           isOpen={isTaskModalOpen}
           onClose={() => setTaskModalOpen(false)}
+          columnId={columns.length > 0 ? columns[0].id : undefined}
         />
         
         <DragLayer />

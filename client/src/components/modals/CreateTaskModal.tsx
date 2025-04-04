@@ -42,10 +42,11 @@ interface CreateTaskModalProps {
   editTask?: Task;
 }
 
+// Define the task schema
 const taskSchema = insertTaskSchema.extend({
-  columnId: z.number(),
-  order: z.number(),
-  assigneeId: z.number().optional().nullable(),
+  columnId: z.coerce.number(),
+  order: z.coerce.number(),
+  assigneeId: z.coerce.number().optional().nullable(),
   priority: z.enum(['low', 'medium', 'high']),
   category: z.string().min(1, "Category is required"),
   dueDate: z.date().optional().nullable(),
@@ -56,76 +57,46 @@ const CreateTaskModal = ({ isOpen, onClose, columnId, editTask }: CreateTaskModa
   const { toast } = useToast();
   const columns = useSelector((state: RootState) => state.board.columns);
   const tasks = useSelector((state: RootState) => state.board.tasks);
-  const users = useSelector((state: RootState) => [
-    // In a real app, this would come from the user state
+  
+  // In a real app, this would come from the user state
+  const users = [
     { id: 1, username: 'Alex Johnson' },
     { id: 2, username: 'Sarah Miller' },
     { id: 3, username: 'Michael Chen' },
     { id: 4, username: 'Olivia Taylor' },
-  ]);
+  ];
+
+  // Set initial form values
+  const defaultValues = {
+    title: editTask?.title || '',
+    description: editTask?.description || '',
+    columnId: columnId || editTask?.columnId || columns[0]?.id || 0,
+    order: editTask?.order || 0,
+    assigneeId: editTask?.assigneeId || null,
+    priority: (editTask?.priority as 'low' | 'medium' | 'high') || 'medium',
+    category: editTask?.category || 'feature',
+    dueDate: editTask?.dueDate ? new Date(editTask.dueDate) : null,
+    isCompleted: editTask?.isCompleted || false,
+  };
 
   const form = useForm<z.infer<typeof taskSchema>>({
     resolver: zodResolver(taskSchema),
-    defaultValues: {
-      title: '',
-      description: '',
-      columnId: columnId || columns[0]?.id || 0,
-      order: 0, // This will be calculated on the server
-      assigneeId: null,
-      priority: 'medium',
-      category: 'feature',
-      dueDate: null,
-      isCompleted: false,
-    },
+    defaultValues,
   });
 
-  // Update form when editing a task
+  // Make sure form is reset when modal is opened/closed or props change
   useEffect(() => {
-    console.log('CreateTaskModal props', { isOpen, columnId, editTask });
-    console.log('Columns available:', columns);
-    
-    if (editTask) {
-      form.reset({
-        title: editTask.title,
-        description: editTask.description || '',
-        columnId: editTask.columnId,
-        order: editTask.order,
-        assigneeId: editTask.assigneeId || null,
-        priority: editTask.priority as 'low' | 'medium' | 'high',
-        category: editTask.category,
-        dueDate: editTask.dueDate ? new Date(editTask.dueDate) : null,
-        isCompleted: editTask.isCompleted,
-      });
-    } else {
-      form.reset({
-        title: '',
-        description: '',
-        columnId: columnId || columns[0]?.id || 0,
-        order: 0,
-        assigneeId: null,
-        priority: 'medium',
-        category: 'feature',
-        dueDate: null,
-        isCompleted: false,
-      });
+    if (isOpen) {
+      form.reset(defaultValues);
     }
-  }, [editTask, columnId, columns, form, isOpen]);
-
-  // Set column if columnId is provided
-  useEffect(() => {
-    if (columnId) {
-      form.setValue('columnId', columnId);
-    }
-  }, [columnId, form]);
+  }, [isOpen, editTask, columnId, columns, form]);
 
   const onSubmit = (data: z.infer<typeof taskSchema>) => {
     if (editTask) {
-      // Create an updated task with all existing properties plus the changes
+      // Handle task update
       const updatedTask = {
         ...editTask,
         ...data,
-        // Convert date to ISO string for storage
-        dueDate: data.dueDate ? data.dueDate : null,
         updatedAt: new Date()
       };
       
@@ -136,19 +107,18 @@ const CreateTaskModal = ({ isOpen, onClose, columnId, editTask }: CreateTaskModa
         description: data.title,
       });
     } else {
-      // For new tasks, calculate order (add to end of column)
+      // Handle new task creation
       const tasksInColumn = tasks[data.columnId] || [];
       
-      const newData = {
+      const newTask = {
         ...data,
+        id: Date.now(), // Generate a unique id
         order: tasksInColumn.length,
-        // Convert date to ISO string for storage
-        dueDate: data.dueDate ? data.dueDate : null,
+        createdAt: new Date(),
+        updatedAt: new Date()
       };
       
-      // Use the thunk action creator with proper dispatch casting
-      // @ts-ignore - The thunk action is correctly typed in the store
-      dispatch(createTask(newData));
+      dispatch(createTask(newTask));
       
       toast({
         title: 'Task created',
@@ -159,11 +129,11 @@ const CreateTaskModal = ({ isOpen, onClose, columnId, editTask }: CreateTaskModa
     onClose();
   };
 
+  // If modal is not open, don't render anything
+  if (!isOpen) return null;
+
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => {
-      console.log('Dialog onOpenChange:', open);
-      if (!open) onClose();
-    }}>
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>{editTask ? 'Edit Task' : 'Create New Task'}</DialogTitle>
@@ -195,7 +165,7 @@ const CreateTaskModal = ({ isOpen, onClose, columnId, editTask }: CreateTaskModa
                     <Textarea
                       placeholder="Task description"
                       rows={3}
-                      value={typeof field.value === 'string' ? field.value : ''}
+                      value={field.value || ''}
                       onChange={field.onChange}
                       onBlur={field.onBlur}
                       ref={field.ref}
@@ -217,7 +187,6 @@ const CreateTaskModal = ({ isOpen, onClose, columnId, editTask }: CreateTaskModa
                     <Select
                       onValueChange={field.onChange}
                       defaultValue={field.value}
-                      value={field.value}
                     >
                       <FormControl>
                         <SelectTrigger>
@@ -248,7 +217,6 @@ const CreateTaskModal = ({ isOpen, onClose, columnId, editTask }: CreateTaskModa
                     <Select
                       onValueChange={field.onChange}
                       defaultValue={field.value}
-                      value={field.value}
                     >
                       <FormControl>
                         <SelectTrigger>
@@ -276,7 +244,6 @@ const CreateTaskModal = ({ isOpen, onClose, columnId, editTask }: CreateTaskModa
                   <Select
                     onValueChange={(value) => field.onChange(parseInt(value))}
                     defaultValue={field.value?.toString()}
-                    value={field.value?.toString()}
                   >
                     <FormControl>
                       <SelectTrigger>
@@ -284,11 +251,15 @@ const CreateTaskModal = ({ isOpen, onClose, columnId, editTask }: CreateTaskModa
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {columns.map(column => (
-                        <SelectItem key={column.id} value={column.id.toString()}>
-                          {column.name}
-                        </SelectItem>
-                      ))}
+                      {columns.length > 0 ? (
+                        columns.map(column => (
+                          <SelectItem key={column.id} value={column.id.toString()}>
+                            {column.name}
+                          </SelectItem>
+                        ))
+                      ) : (
+                        <SelectItem value="0">No columns available</SelectItem>
+                      )}
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -307,7 +278,6 @@ const CreateTaskModal = ({ isOpen, onClose, columnId, editTask }: CreateTaskModa
                       field.onChange(value !== "unassigned" ? parseInt(value) : null)
                     }
                     defaultValue={field.value?.toString() || 'unassigned'}
-                    value={field.value?.toString() || 'unassigned'}
                   >
                     <FormControl>
                       <SelectTrigger>
