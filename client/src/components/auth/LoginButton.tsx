@@ -17,11 +17,23 @@ export const LoginButton = ({ className }: LoginButtonProps) => {
       setIsLoading(true);
       await signInWithGoogle();
       // The auth state change will be handled by the AuthContext
-    } catch (error) {
+    } catch (error: any) {
       console.error('Login error:', error);
+      
+      // Provide more specific error messages based on the error code
+      let errorMessage = 'There was an error logging in with Google. Please try again.';
+      
+      if (error.code === 'auth/configuration-not-found') {
+        errorMessage = 'Firebase authentication is not properly configured. Please ensure Firebase is set up correctly.';
+      } else if (error.code === 'auth/popup-closed-by-user') {
+        errorMessage = 'Sign-in was cancelled. Please try again.';
+      } else if (error.code) {
+        errorMessage = `Authentication error (${error.code}): ${error.message}`;
+      }
+      
       toast({
         title: 'Login Failed',
-        description: 'There was an error logging in with Google. Please try again.',
+        description: errorMessage,
         variant: 'destructive',
       });
     } finally {

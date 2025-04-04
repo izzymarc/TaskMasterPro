@@ -34,11 +34,22 @@ export const AuthRedirectHandler = () => {
             description: `Welcome back, ${user.displayName || 'User'}!`,
           });
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error processing redirect result:', error);
+        
+        // Provide more specific error messages based on the error code
+        let errorMessage = "There was a problem with your sign-in. Please try again.";
+        
+        if (error.code === 'auth/configuration-not-found') {
+          console.error('Firebase Auth Configuration Error:', error);
+          errorMessage = 'The Firebase project is not properly configured for authentication. Please ensure Firebase is set up correctly in the Firebase Console.';
+        } else if (error.code) {
+          errorMessage = `Authentication error (${error.code}): ${error.message}`;
+        }
+        
         toast({
           title: "Authentication Error",
-          description: "There was a problem with your sign-in. Please try again.",
+          description: errorMessage,
           variant: "destructive"
         });
       }

@@ -25,11 +25,25 @@ const firebaseConfig = {
   authDomain: `${import.meta.env.VITE_FIREBASE_PROJECT_ID}.firebaseapp.com`,
   projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
   storageBucket: `${import.meta.env.VITE_FIREBASE_PROJECT_ID}.appspot.com`,
+  messagingSenderId: "", // This will be empty but included for proper initialization
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
+// Initialize Firebase - safely handle potential duplicate initialization
+let app;
+try {
+  app = initializeApp(firebaseConfig);
+} catch (error: any) {
+  if (error.code === 'app/duplicate-app') {
+    // App already exists, use the existing one
+    console.info('Firebase app already initialized, using existing app');
+    app = initializeApp(); // Get the default app
+  } else {
+    console.error('Firebase initialization error:', error);
+    throw error;
+  }
+}
+
 const auth = getAuth(app);
 const db = getFirestore(app);
 
