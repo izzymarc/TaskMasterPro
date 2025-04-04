@@ -81,6 +81,9 @@ const CreateTaskModal = ({ isOpen, onClose, columnId, editTask }: CreateTaskModa
 
   // Update form when editing a task
   useEffect(() => {
+    console.log('CreateTaskModal props', { isOpen, columnId, editTask });
+    console.log('Columns available:', columns);
+    
     if (editTask) {
       form.reset({
         title: editTask.title,
@@ -106,7 +109,7 @@ const CreateTaskModal = ({ isOpen, onClose, columnId, editTask }: CreateTaskModa
         isCompleted: false,
       });
     }
-  }, [editTask, columnId, columns, form]);
+  }, [editTask, columnId, columns, form, isOpen]);
 
   // Set column if columnId is provided
   useEffect(() => {
@@ -157,7 +160,10 @@ const CreateTaskModal = ({ isOpen, onClose, columnId, editTask }: CreateTaskModa
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={(open) => {
+      console.log('Dialog onOpenChange:', open);
+      if (!open) onClose();
+    }}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>{editTask ? 'Edit Task' : 'Create New Task'}</DialogTitle>

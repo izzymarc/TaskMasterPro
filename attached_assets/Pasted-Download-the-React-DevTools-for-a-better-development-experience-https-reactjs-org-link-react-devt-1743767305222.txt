@@ -1,0 +1,33 @@
+Download the React DevTools for a better development experience: https://reactjs.org/link/react-devtools
+home.tsx:271 A non-serializable value was detected in an action, in the path: `payload.1.createdAt`. Value: Fri Apr 04 2025 12:47:46 GMT+0100 (West Africa Standard Time) 
+Take a look at the logic that dispatched this action:  
+{type: 'user/setWorkspaces', payload: Array(2)}
+ 
+(See https://redux.js.org/faq/actions#why-should-type-be-a-string-or-at-least-serializable-why-should-my-action-types-be-constants) 
+(To allow non-serializable values see: https://redux-toolkit.js.org/usage/usage-guide#working-with-non-serializable-data)
+chunk-RPCDYKBN.js?v=e20372ea:521 Warning: validateDOMNesting(...): <a> cannot appear as a descendant of <a>.
+    at a
+    at a
+    at https://80b4fc7a-774e-441d-806c-2aa2d6ccca81-00-1y70419iqlxem.picard.replit…/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=e20372ea:279:18
+    at div
+    at div
+    at li
+    at ul
+    at div
+    at nav
+    at div
+    at Sidebar (https://80b4fc7a-774e-441d-806c-2aa2d6ccca81-00-1y70419iqlxem.picard.replit.dev/src/components/layout/Sidebar.tsx:31:20)
+    at div
+    at Dashboard (https://80b4fc7a-774e-441d-806c-2aa2d6ccca81-00-1y70419iqlxem.picard.replit.dev/src/pages/home.tsx:73:20)
+    at Home (https://80b4fc7a-774e-441d-806c-2aa2d6ccca81-00-1y70419iqlxem.picard.replit.dev/src/pages/home.tsx:419:20)
+    at Route (https://80b4fc7a-774e-441d-806c-2aa2d6ccca81-00-1y70419iqlxem.picard.replit…/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=e20372ea:265:16)
+    at Switch (https://80b4fc7a-774e-441d-806c-2aa2d6ccca81-00-1y70419iqlxem.picard.replit…/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=e20372ea:321:17)
+    at Router
+    at AuthProvider (https://80b4fc7a-774e-441d-806c-2aa2d6ccca81-00-1y70419iqlxem.picard.replit.dev/src/contexts/AuthContext.tsx:25:32)
+    at QueryClientProvider (https://80b4fc7a-774e-441d-806c-2aa2d6ccca81-00-1y70419iqlxem.picard.replit…rkspace/node_modules/.vite/deps/@tanstack_react-query.js?v=e20372ea:2805:3)
+    at DndProvider2 (https://80b4fc7a-774e-441d-806c-2aa2d6ccca81-00-1y70419iqlxem.picard.replit…me/runner/workspace/node_modules/.vite/deps/react-dnd.js?v=e20372ea:1505:9)
+    at Provider (https://80b4fc7a-774e-441d-806c-2aa2d6ccca81-00-1y70419iqlxem.picard.replit…/runner/workspace/node_modules/.vite/deps/react-redux.js?v=e20372ea:923:11)
+    at App
+﻿
+
+A form field element should have an id or name attribute

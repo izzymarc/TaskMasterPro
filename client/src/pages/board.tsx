@@ -143,7 +143,10 @@ const Board = () => {
       <div className="flex-1 flex flex-col h-screen overflow-hidden">
         <Topbar 
           onMenuClick={() => setSidebarOpen(!sidebarOpen)} 
-          onNewTask={() => setTaskModalOpen(true)} 
+          onNewTask={() => {
+            console.log('New Task button clicked');
+            setTaskModalOpen(true);
+          }} 
           board={currentBoard}
           lastUpdated={currentBoard.updatedAt ? new Date(currentBoard.updatedAt) : undefined}
           teamMembers={teamMembers}
