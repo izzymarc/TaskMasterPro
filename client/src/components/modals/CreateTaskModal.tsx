@@ -53,6 +53,8 @@ const taskSchema = insertTaskSchema.extend({
 });
 
 const CreateTaskModal = ({ isOpen, onClose, columnId, editTask }: CreateTaskModalProps) => {
+  console.log('CreateTaskModal rendered with props:', { isOpen, columnId, editTaskId: editTask?.id });
+  
   const dispatch = useDispatch<AppDispatch>();
   const { toast } = useToast();
   const columns = useSelector((state: RootState) => state.board.columns);
@@ -129,15 +131,30 @@ const CreateTaskModal = ({ isOpen, onClose, columnId, editTask }: CreateTaskModa
     onClose();
   };
 
-  // If modal is not open, don't render anything
-  if (!isOpen) return null;
+  console.log('Modal rendering decision, isOpen:', isOpen);
+  
+  if (!isOpen) {
+    console.log('Modal not rendering because isOpen is false');
+    return null;
+  }
+
+  console.log('Rendering modal with columns:', columns);
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-[500px]">
-        <DialogHeader>
-          <DialogTitle>{editTask ? 'Edit Task' : 'Create New Task'}</DialogTitle>
-        </DialogHeader>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+      <div className="bg-white rounded-lg shadow-lg w-full max-w-md mx-auto p-6">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-semibold">
+            {editTask ? 'Edit Task' : 'Create New Task'}
+          </h2>
+          <Button 
+            variant="ghost" 
+            className="h-8 w-8 p-0" 
+            onClick={onClose}
+          >
+            ×
+          </Button>
+        </div>
         
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -319,18 +336,18 @@ const CreateTaskModal = ({ isOpen, onClose, columnId, editTask }: CreateTaskModa
               )}
             />
             
-            <DialogFooter>
+            <div className="flex justify-end space-x-2 mt-6">
               <Button type="button" variant="outline" onClick={onClose}>
                 Cancel
               </Button>
               <Button type="submit">
                 {editTask ? 'Update Task' : 'Create Task'}
               </Button>
-            </DialogFooter>
+            </div>
           </form>
         </Form>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </div>
   );
 };
 

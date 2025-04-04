@@ -27,6 +27,7 @@ const Board = () => {
   const boardId = params?.boardId ? parseInt(params.boardId) : 0;
   
   const currentBoard = useSelector((state: RootState) => state.board.currentBoard);
+  const columns = useSelector((state: RootState) => state.board.columns);
   const loading = useSelector((state: RootState) => state.board.loading);
   const error = useSelector((state: RootState) => state.board.error);
   
@@ -144,8 +145,9 @@ const Board = () => {
         <Topbar 
           onMenuClick={() => setSidebarOpen(!sidebarOpen)} 
           onNewTask={() => {
-            console.log('New Task button clicked');
+            console.log('New Task button clicked, current modal state:', isTaskModalOpen);
             setTaskModalOpen(true);
+            console.log('Modal state after setting:', true);
           }} 
           board={currentBoard}
           lastUpdated={currentBoard.updatedAt ? new Date(currentBoard.updatedAt) : undefined}
