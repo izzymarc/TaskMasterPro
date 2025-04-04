@@ -49,6 +49,13 @@ export const userSlice = createSlice({
       state.loading = false;
       state.error = null;
     },
+    clearUser: (state) => {
+      state.currentUser = null;
+      state.workspaces = [];
+      state.teams = [];
+      state.loading = false;
+      state.error = null;
+    },
     setLoading: (state, action: PayloadAction<boolean>) => {
       state.loading = action.payload;
     },
@@ -89,7 +96,8 @@ export const userSlice = createSlice({
 });
 
 export const { 
-  setUser, 
+  setUser,
+  clearUser,
   setLoading, 
   setError, 
   setWorkspaces, 
