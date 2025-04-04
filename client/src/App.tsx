@@ -16,22 +16,28 @@ import Workspace from "@/pages/workspace";
 function Router() {
   return (
     <Switch>
+      {/* Home page - publicly accessible */}
       <Route path="/" component={Home} />
+      
+      {/* Protected routes requiring authentication */}
       <Route path="/workspace/:workspaceId">
-        {(params) => (
+        {() => (
           <ProtectedRoute>
             <Workspace />
           </ProtectedRoute>
         )}
       </Route>
+      
       <Route path="/board/:boardId">
-        {(params) => (
+        {() => (
           <ProtectedRoute>
             <Board />
           </ProtectedRoute>
         )}
       </Route>
-      <Route component={NotFound} />
+      
+      {/* Fallback route for 404 errors */}
+      <Route path="/:rest*" component={NotFound} />
     </Switch>
   );
 }
